@@ -23,6 +23,9 @@
 ## 🚀 Install
 
 ```bash
+# from npm (recommended)
+dsh plugin --profile web add @temotee2103/dsh-ci-co-pilot
+
 # from GitHub (zero build step — works immediately)
 dsh plugin --profile web add github:temotee2103/dsh-ci-co-pilot
 

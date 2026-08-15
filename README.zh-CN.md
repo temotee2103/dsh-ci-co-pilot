@@ -21,6 +21,9 @@
 ## 🚀 安装
 
 ```bash
+# 从 npm 安装（推荐）
+dsh plugin --profile web add @temotee2103/dsh-ci-co-pilot
+
 # 从 GitHub 直接安装（零构建步骤，装完即用）
 dsh plugin --profile web add github:temotee2103/dsh-ci-co-pilot
 
