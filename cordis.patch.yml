@@ -1,0 +1,21 @@
+# dsh-ci-co-pilot bundle layer.
+# Users can override any value below from their own profile cordis.patch.yml.
+- insert:
+    - id: ci-co-pilot
+      name: '@dsh-external/dsh-ci-co-pilot'
+      config:
+        # Optional default repo "owner/name". Tools accept a per-call `repo`.
+        repo: ''
+        # Optional API base for GitHub Enterprise Server. Empty means github.com.
+        apiBase: 'https://api.github.com'
+        review:
+          maxFiles: 50
+          maxDiffChars: 20000
+        ci:
+          maxLogLines: 400
+          maxFailedChecks: 10
+        triage:
+          perPage: 50
+          staleDays: 30
+        release:
+          perPage: 100
