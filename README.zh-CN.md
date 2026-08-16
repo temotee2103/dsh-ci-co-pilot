@@ -17,6 +17,8 @@
 | `gh_triage_issues` | 列出 Issue 及分类信号：年龄、是否陈旧、评论数、标签。 |
 | `gh_update_issue` | 设置标签、指派、评论、里程碑、关闭/重开。 |
 | `gh_release_notes` | 按标签或 Conventional Commit 前缀，把合并的 PR 分组生成发版说明。 |
+| `gh_rerun_ci` | 重跑 workflow run——仅失败 job 或全部（修复后验证）。 |
+| `gh_create_release` | 把发版说明发布为 GitHub Release（自动创建 tag）。 |
 
 ## 🚀 安装
 

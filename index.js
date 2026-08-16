@@ -6,6 +6,8 @@ import { createFixCiTool } from './src/tools/fix-ci.js'
 import { createTriageIssuesTool } from './src/tools/triage-issues.js'
 import { createUpdateIssueTool } from './src/tools/update-issue.js'
 import { createReleaseNotesTool } from './src/tools/release-notes.js'
+import { createRerunCiTool } from './src/tools/rerun-ci.js'
+import { createCreateReleaseTool } from './src/tools/create-release.js'
 
 export const name = 'ci-co-pilot'
 export const inject = ['tools']
@@ -45,6 +47,8 @@ export function apply(ctx, inputConfig = {}) {
     createTriageIssuesTool(client, config.triage),
     createUpdateIssueTool(client),
     createReleaseNotesTool(client, config.release),
+    createRerunCiTool(client),
+    createCreateReleaseTool(client),
   ]
   for (const tool of tools) {
     ctx.tools.register(defineTool(tool))

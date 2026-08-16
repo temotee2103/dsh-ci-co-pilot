@@ -4,6 +4,8 @@ import { createSubmitReviewTool } from '../src/tools/submit-review.js'
 import { createFixCiTool } from '../src/tools/fix-ci.js'
 import { createTriageIssuesTool } from '../src/tools/triage-issues.js'
 import { createUpdateIssueTool } from '../src/tools/update-issue.js'
+import { createRerunCiTool } from '../src/tools/rerun-ci.js'
+import { createCreateReleaseTool } from '../src/tools/create-release.js'
 
 const exec = { signal: new AbortController().signal }
 
@@ -200,5 +202,61 @@ describe('gh_update_issue', () => {
     const value = await tool.execute({ number: 3, repo: 'o/r', action: 'close' }, exec)
     expect(client.request.mock.calls[0][2].body).toEqual({ state: 'closed' })
     expect(value.action).toBe('close')
+  })
+})
+
+describe('gh_rerun_ci', () => {
+  it('reruns only failed jobs by default', async () => {
+    const client = makeClient({
+      'POST /repos/o/r/actions/runs/5/rerun-failed-jobs': {},
+    })
+    const tool = createRerunCiTool(client)
+    const value = await tool.execute({ repo: 'o/r', runId: 5 }, exec)
+    expect(value.mode).toBe('failed-jobs')
+    expect(value.reran).toBe(true)
+    expect(client.request.mock.calls[0][1]).toBe('/repos/o/r/actions/runs/5/rerun-failed-jobs')
+  })
+
+  it('reruns all jobs when failedOnly is false', async () => {
+    const client = makeClient({
+      'POST /repos/o/r/actions/runs/5/rerun': {},
+    })
+    const tool = createRerunCiTool(client)
+    await tool.execute({ repo: 'o/r', runId: 5, failedOnly: false }, exec)
+    expect(client.request.mock.calls[0][1]).toBe('/repos/o/r/actions/runs/5/rerun')
+  })
+})
+
+describe('gh_create_release', () => {
+  it('creates a release with the given tag and notes', async () => {
+    const client = makeClient({
+      'POST /repos/o/r/releases': {
+        id: 12,
+        tag_name: 'v0.2.0',
+        name: 'v0.2.0',
+        draft: false,
+        prerelease: false,
+        html_url: 'https://github.com/o/r/releases/tag/v0.2.0',
+      },
+    })
+    const tool = createCreateReleaseTool(client)
+    const value = await tool.execute(
+      { repo: 'o/r', tag: 'v0.2.0', body: '## Features\n- widget (#3)' },
+      exec,
+    )
+    const payload = client.request.mock.calls[0][2].body
+    expect(payload.tag_name).toBe('v0.2.0')
+    expect(payload.body).toContain('widget')
+    expect(payload.draft).toBe(false)
+    expect(value.htmlUrl).toContain('releases/tag/v0.2.0')
+  })
+
+  it('sends target_commitish when provided', async () => {
+    const client = makeClient({
+      'POST /repos/o/r/releases': { id: 13, tag_name: 'v0.2.0', name: 'v0.2.0', draft: false, prerelease: false },
+    })
+    const tool = createCreateReleaseTool(client)
+    await tool.execute({ repo: 'o/r', tag: 'v0.2.0', target: 'abc123' }, exec)
+    expect(client.request.mock.calls[0][2].body.target_commitish).toBe('abc123')
   })
 })

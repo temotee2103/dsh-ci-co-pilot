@@ -19,6 +19,8 @@
 | `gh_triage_issues` | List issues with triage signals: age, staleness, comments, labels. |
 | `gh_update_issue` | Set labels, assign, comment, set milestone, close/reopen. |
 | `gh_release_notes` | Generate grouped release notes from PRs merged since the last release, a tag, or a date. |
+| `gh_rerun_ci` | Rerun a workflow run — failed jobs only, or everything (verify a fix). |
+| `gh_create_release` | Publish release notes as a GitHub release (creates the tag too). |
 
 ## 🚀 Install
 
