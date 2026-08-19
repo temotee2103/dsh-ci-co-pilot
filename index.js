@@ -8,6 +8,8 @@ import { createUpdateIssueTool } from './src/tools/update-issue.js'
 import { createReleaseNotesTool } from './src/tools/release-notes.js'
 import { createRerunCiTool } from './src/tools/rerun-ci.js'
 import { createCreateReleaseTool } from './src/tools/create-release.js'
+import { createListPullsTool } from './src/tools/list-pulls.js'
+import { createRepoStatusTool } from './src/tools/repo-status.js'
 
 export const name = 'ci-co-pilot'
 export const inject = ['tools']
@@ -31,6 +33,12 @@ function normalizeConfig(config = {}) {
     release: {
       perPage: config.release?.perPage ?? 100,
     },
+    pulls: {
+      limit: config.pulls?.limit ?? 30,
+    },
+    status: {
+      runs: config.status?.runs ?? 10,
+    },
   }
 }
 
@@ -49,6 +57,8 @@ export function apply(ctx, inputConfig = {}) {
     createReleaseNotesTool(client, config.release),
     createRerunCiTool(client),
     createCreateReleaseTool(client),
+    createListPullsTool(client, config.pulls),
+    createRepoStatusTool(client, config.status),
   ]
   for (const tool of tools) {
     ctx.tools.register(defineTool(tool))

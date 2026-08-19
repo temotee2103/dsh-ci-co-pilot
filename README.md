@@ -21,6 +21,8 @@
 | `gh_release_notes` | Generate grouped release notes from PRs merged since the last release, a tag, or a date. |
 | `gh_rerun_ci` | Rerun a workflow run — failed jobs only, or everything (verify a fix). |
 | `gh_create_release` | Publish release notes as a GitHub release (creates the tag too). |
+| `gh_list_pulls` | List PRs by state / base / head branch with age, label and draft signals — find PRs to review or track a release train. |
+| `gh_repo_status` | One-call repo health snapshot: stars, open PR / issue counts, recent workflow runs. |
 
 ## 🚀 Install
 
@@ -78,7 +80,7 @@ Ask your agent things like:
 
 ## ⚙️ Configuration
 
-All knobs are validated config values you can override from your profile's `cordis.patch.yml` (see the defaults in [`cordis.patch.yml`](cordis.patch.yml)): `review.maxFiles`, `review.maxDiffChars`, `ci.maxLogLines`, `ci.maxFailedChecks`, `triage.perPage`, `triage.staleDays`, `release.perPage`.
+All knobs are validated config values you can override from your profile's `cordis.patch.yml` (see the defaults in [`cordis.patch.yml`](cordis.patch.yml)): `review.maxFiles`, `review.maxDiffChars`, `ci.maxLogLines`, `ci.maxFailedChecks`, `triage.perPage`, `triage.staleDays`, `release.perPage`, `pulls.limit`, `status.runs`. The API client also retries rate-limited responses (403 / 429) automatically, honoring `Retry-After` and `x-ratelimit-reset`.
 
 ## 🧑‍💻 Development
 
@@ -93,8 +95,8 @@ pnpm check       # syntax checks + tests
 `dsh-ci-co-pilot` is a standard Cordis bundle for DeepSeek Harness:
 
 - `cordis.patch.yml` — the bundle layer that mounts the plugin row.
-- `index.js` — plugin entry: registers the six tools on the `tools` service.
-- `src/github.js` — a tiny fetch-based GitHub REST client (auth header, pagination, error mapping, `AbortSignal`).
+- `index.js` — plugin entry: registers the ten tools on the `tools` service.
+- `src/github.js` — a tiny fetch-based GitHub REST client (auth header, pagination, rate-limit retry, error mapping, `AbortSignal`).
 - `src/tools/*` — one module per tool, returning structured canonical values; `src/format.js` renders them to model-facing markdown.
 
 The plugin ships plain ESM JavaScript — no build step, so `dsh plugin add github:...` installs and runs immediately.

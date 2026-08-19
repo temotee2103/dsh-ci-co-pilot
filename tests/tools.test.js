@@ -6,6 +6,9 @@ import { createTriageIssuesTool } from '../src/tools/triage-issues.js'
 import { createUpdateIssueTool } from '../src/tools/update-issue.js'
 import { createRerunCiTool } from '../src/tools/rerun-ci.js'
 import { createCreateReleaseTool } from '../src/tools/create-release.js'
+import { createListPullsTool } from '../src/tools/list-pulls.js'
+import { createRepoStatusTool } from '../src/tools/repo-status.js'
+import { listPullsMarkdown, repoStatusMarkdown } from '../src/format.js'
 
 const exec = { signal: new AbortController().signal }
 
@@ -258,5 +261,93 @@ describe('gh_create_release', () => {
     const tool = createCreateReleaseTool(client)
     await tool.execute({ repo: 'o/r', tag: 'v0.2.0', target: 'abc123' }, exec)
     expect(client.request.mock.calls[0][2].body.target_commitish).toBe('abc123')
+  })
+})
+
+describe('gh_list_pulls', () => {
+  it('lists PRs with age, label and draft signals', async () => {
+    const client = makeClient({
+      'GET /repos/o/r/pulls': [
+        { number: 12, title: 'feat: x', state: 'open', draft: false, created_at: '2026-08-10T00:00:00Z', labels: [{ name: 'bug' }], head: { ref: 'f/x' }, base: { ref: 'main' }, user: { login: 'ada' }, html_url: 'https://p/12' },
+        { number: 13, title: 'wip: y', state: 'open', draft: true, created_at: '2026-08-15T00:00:00Z', labels: [], head: { ref: 'f/y' }, base: { ref: 'main' }, user: { login: 'bob' }, html_url: 'https://p/13' },
+      ],
+    })
+    const tool = createListPullsTool(client)
+    const value = await tool.execute({ repo: 'o/r', state: 'open' }, exec)
+    expect(value.total).toBe(2)
+    expect(value.open).toBe(2)
+    expect(value.drafts).toBe(1)
+    expect(value.items[0].labels).toEqual(['bug'])
+    expect(value.items[1].draft).toBe(true)
+    const [method, path, opts] = client.collect.mock.calls[0]
+    expect(`${method} ${path}`).toBe('GET /repos/o/r/pulls')
+    expect(opts.query.state).toBe('open')
+    expect(opts.query.sort).toBe('created')
+  })
+
+  it('renders a markdown summary', () => {
+    const markdown = listPullsMarkdown({
+      repo: 'o/r',
+      total: 1,
+      open: 1,
+      drafts: 1,
+      items: [
+        { number: 13, title: 'wip: y', author: 'bob', daysOpen: 2, labels: [], draft: true, head: 'f/y', base: 'main' },
+      ],
+    })
+    expect(markdown).toContain('#13 wip: y')
+    expect(markdown).toContain('draft')
+  })
+})
+
+describe('gh_repo_status', () => {
+  it('assembles a repo health snapshot', async () => {
+    const client = makeClient({
+      'GET /repos/o/r': {
+        name: 'r',
+        description: 'demo',
+        language: 'JavaScript',
+        default_branch: 'main',
+        stargazers_count: 42,
+        forks_count: 3,
+        subscribers_count: 1,
+        open_issues_count: 5,
+        archived: false,
+        pushed_at: '2026-08-17T00:00:00Z',
+      },
+      'GET /repos/o/r/actions/runs': {
+        workflow_runs: [
+          { id: 55, name: 'ci', head_branch: 'main', status: 'completed', conclusion: 'success', created_at: '2026-08-17T00:00:00Z', html_url: 'https://r/55' },
+          { id: 54, name: 'ci', head_branch: 'main', status: 'completed', conclusion: 'failure', created_at: '2026-08-16T00:00:00Z', html_url: 'https://r/54' },
+        ],
+      },
+      'GET /search/issues': (opts) => {
+        const q = opts?.query?.q ?? ''
+        return q.includes('is:pr') ? { total_count: 2, items: [] } : { total_count: 3, items: [] }
+      },
+    })
+    const tool = createRepoStatusTool(client)
+    const value = await tool.execute({ repo: 'o/r' }, exec)
+    expect(value.meta.stars).toBe(42)
+    expect(value.meta.defaultBranch).toBe('main')
+    expect(value.openPrs).toBe(2)
+    expect(value.openIssues).toBe(3)
+    expect(value.runs).toHaveLength(2)
+    expect(value.runs[0].conclusion).toBe('success')
+    expect(value.runs[1].conclusion).toBe('failure')
+  })
+
+  it('renders a markdown summary', () => {
+    const markdown = repoStatusMarkdown({
+      repo: 'o/r',
+      meta: { name: 'r', description: 'demo', language: 'JavaScript', defaultBranch: 'main', stars: 42, forks: 3, watchers: 1, openIssuesCount: 5, archived: false, pushedAt: '2026-08-17T00:00:00Z' },
+      openPrs: 2,
+      openIssues: 3,
+      runs: [{ id: 55, name: 'ci', branch: 'main', status: 'completed', conclusion: 'success', createdAt: '2026-08-17T00:00:00Z' }],
+    })
+    expect(markdown).toContain('⭐ 42')
+    expect(markdown).toContain('2 open PRs')
+    expect(markdown).toContain('Recent workflow runs')
+    expect(markdown).toContain('#55')
   })
 })

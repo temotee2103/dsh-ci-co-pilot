@@ -66,54 +66,127 @@ export function dateOnly(isoDate) {
   return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10)
 }
 
+const RETRYABLE_STATUS = new Set([403, 429])
+const DEFAULT_MAX_RETRIES = 3
+
+/** Read an HTTP header as a non-negative number of seconds, or null. */
+function headerSeconds(response, name) {
+  const raw = response.headers.get(name)
+  if (!raw) return null
+  const value = Number(raw)
+  return Number.isFinite(value) && value >= 0 ? value : null
+}
+
+/** Sleep for `ms`, aborting early when `signal` fires. */
+function sleep(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(signal.reason ?? new Error('aborted'))
+      return
+    }
+    const timer = setTimeout(resolve, ms)
+    signal?.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timer)
+        reject(signal.reason ?? new Error('aborted'))
+      },
+      { once: true },
+    )
+  })
+}
+
+/**
+ * Work out how long to wait before retrying a rate-limited response.
+ * Prefers `Retry-After`, then `x-ratelimit-reset` (epoch seconds), then exponential backoff.
+ */
+function retryDelayMs(response, attempt) {
+  const retryAfter = headerSeconds(response, 'retry-after')
+  if (retryAfter != null) return retryAfter * 1000
+  const reset = headerSeconds(response, 'x-ratelimit-reset')
+  if (reset != null) return Math.max(0, reset * 1000 - Date.now())
+  return Math.min(30_000, 1000 * 2 ** attempt)
+}
+
 /**
  * Create a GitHub API client.
- * @param {{ token?: string, baseUrl?: string, userAgent?: string }} options
+ * @param {{ token?: string, baseUrl?: string, userAgent?: string, maxRetries?: number }} options
  */
-export function createClient({ token, baseUrl = DEFAULT_API_BASE, userAgent = DEFAULT_USER_AGENT } = {}) {
+export function createClient({
+  token,
+  baseUrl = DEFAULT_API_BASE,
+  userAgent = DEFAULT_USER_AGENT,
+  maxRetries = DEFAULT_MAX_RETRIES,
+} = {}) {
   /**
    * Perform one REST request.
+   * Retries rate-limited responses (403 with `x-ratelimit-remaining: 0` / `Retry-After`,
+   * or 429) up to `maxRetries` times while honoring `Retry-After` and `x-ratelimit-reset`.
    * @returns {Promise<any>} parsed JSON, plain text, or null for 204.
    */
-  async function request(method, path, { query, body, headers, signal } = {}) {
+  async function request(method, path, { query, body, headers, signal, maxRetries: callRetries } = {}) {
     const url = new URL(baseUrl + path)
     for (const [key, value] of Object.entries(query ?? {})) {
       if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value))
     }
-    let response
-    try {
-      response = await fetch(url, {
-        method,
-        signal,
-        headers: {
-          accept: headers?.accept ?? 'application/vnd.github+json',
-          'user-agent': userAgent,
-          ...(token ? { authorization: `Bearer ${token}` } : {}),
-          ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
-          ...headers,
-        },
-        body: body !== undefined ? JSON.stringify(body) : undefined,
-      })
-    } catch (error) {
-      if (error instanceof GitHubError) throw error
-      throw new GitHubError(`GitHub request failed: ${error.message}`, { method, path })
-    }
-    if (!response.ok) {
-      let detail = ''
+    const retries = callRetries ?? maxRetries
+
+    for (let attempt = 0; ; attempt += 1) {
+      let response
       try {
-        detail = await response.text()
-      } catch {
-        /* keep empty detail */
+        response = await fetch(url, {
+          method,
+          signal,
+          headers: {
+            accept: headers?.accept ?? 'application/vnd.github+json',
+            'user-agent': userAgent,
+            ...(token ? { authorization: `Bearer ${token}` } : {}),
+            ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
+            ...headers,
+          },
+          body: body !== undefined ? JSON.stringify(body) : undefined,
+        })
+      } catch (error) {
+        if (error instanceof GitHubError) throw error
+        if (error?.name === 'AbortError') {
+          throw new GitHubError(`GitHub request aborted: ${method} ${path}`, { method, path })
+        }
+        throw new GitHubError(`GitHub request failed: ${error.message}`, { method, path })
       }
-      throw new GitHubError(
-        `GitHub API ${response.status} ${method} ${path}${detail ? ` — ${detail.slice(0, 300)}` : ''}`,
-        { method, path, status: response.status, body: detail.slice(0, 2000) },
-      )
+
+      const rateLimited =
+        response.status === 429 ||
+        (response.status === 403 &&
+          (headerSeconds(response, 'x-ratelimit-remaining') === 0 ||
+            headerSeconds(response, 'retry-after') != null))
+
+      if (rateLimited && attempt < retries) {
+        const waitMs = retryDelayMs(response, attempt)
+        try {
+          await sleep(waitMs, signal)
+        } catch {
+          throw new GitHubError(`GitHub request aborted: ${method} ${path}`, { method, path })
+        }
+        continue
+      }
+
+      if (!response.ok) {
+        let detail = ''
+        try {
+          detail = await response.text()
+        } catch {
+          /* keep empty detail */
+        }
+        throw new GitHubError(
+          `GitHub API ${response.status} ${method} ${path}${detail ? ` — ${detail.slice(0, 300)}` : ''}`,
+          { method, path, status: response.status, body: detail.slice(0, 2000) },
+        )
+      }
+      if (response.status === 204) return null
+      const contentType = response.headers.get('content-type') ?? ''
+      if (contentType.includes('json')) return response.json()
+      return response.text()
     }
-    if (response.status === 204) return null
-    const contentType = response.headers.get('content-type') ?? ''
-    if (contentType.includes('json')) return response.json()
-    return response.text()
   }
 
   /**

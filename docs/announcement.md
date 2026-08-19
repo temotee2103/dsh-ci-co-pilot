@@ -6,7 +6,7 @@ DeepSeek Harness（DSH）是 DeepSeek 官方开源的 Agent 运行框架，核�
 
 我写了一个开源插件 **dsh-ci-co-pilot**，让 DSH Agent 变成真正的 GitHub 副驾，覆盖从"发现问题"到"发布上线"的完整链路。
 
-## 八个工具
+## 十个工具
 
 | 工具 | 作用 |
 | --- | --- |
@@ -18,6 +18,8 @@ DeepSeek Harness（DSH）是 DeepSeek 官方开源的 Agent 运行框架，核�
 | `gh_update_issue` | 打标签、指派、评论、里程碑、关闭重开 |
 | `gh_release_notes` | 按标签或 Conventional Commit 把合并的 PR 分组生成发版说明 |
 | `gh_create_release` | 把发版说明发布为 GitHub Release，自动建 tag |
+| `gh_list_pulls` | 按 state / base / head 分支列出 PR，带年龄、标签、draft 信号 |
+| `gh_repo_status` | 一次调用拿到仓库健康快照：star、open PR/Issue 数、最近 CI 结果 |
 
 ## 安装
 
@@ -77,11 +79,11 @@ main 分支 CI 红了，找到失败原因并修复，然后重跑验证。
 
 **零运行时依赖。** GitHub 请求直接用内置 fetch，支持 AbortSignal；peer 依赖（`dsh-tools`、`cordis`）由 Harness 运行时提供，不污染依赖树。
 
-**可配置。** diff 截断长度、日志尾部行数、issue 陈旧阈值都可以在 profile 配置里覆盖。
+**可配置。** diff 截断长度、日志尾部行数、issue 陈旧阈值都可以在 profile 配置里覆盖；API 客户端还会自动处理 GitHub 限流（403/429 按 `Retry-After` / `x-ratelimit-reset` 等待重试），长任务不会撞墙就断。
 
 ## 开源与下一步
 
-MIT 协议，代码、测试、文档全公开；42 个单测全绿，插件仓库自己的 GitHub Actions CI 也是绿的。已提交官方插件索引 dsh-index（PR #36，等待合并），合并后支持按名安装和国内镜像加速。
+MIT 协议，代码、测试、文档全公开；**51 个单测全绿**（mock fetch，无网络依赖），插件仓库自己的 GitHub Actions CI 也是绿的。已提交官方插件索引 dsh-index（PR #36，等待合并），合并后支持按名安装和国内镜像加速。
 
 下一步计划：组合成开箱即用的完整 Agent（agent-ci-co-pilot，自动定时审 PR + CI 失败通知）、抽象 VCS 层支持 GitLab / Gitee、把团队审查规范注入提示词。
 

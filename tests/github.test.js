@@ -127,6 +127,72 @@ describe('createClient.request', () => {
   })
 })
 
+describe('createClient.request rate-limit retry', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  function mockFetchSequence(...responses) {
+    const fetchMock = vi.fn()
+    for (const response of responses) fetchMock.mockResolvedValueOnce(response)
+    vi.stubGlobal('fetch', fetchMock)
+    return fetchMock
+  }
+
+  function rateLimitedResponse(status, headers) {
+    return {
+      ok: false,
+      status,
+      headers: { get: (name) => headers[name] ?? null },
+      text: async () => 'rate limited',
+    }
+  }
+
+  it('retries a 403 rate-limit using x-ratelimit-reset, then succeeds', async () => {
+    const fetchMock = mockFetchSequence(
+      rateLimitedResponse(403, { 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': '1' }),
+      { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ ok: true }) },
+    )
+    const client = createClient({ token: 't' })
+    await expect(client.request('GET', '/repos/a/b')).resolves.toEqual({ ok: true })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('retries a 429 using Retry-After', async () => {
+    const fetchMock = mockFetchSequence(
+      rateLimitedResponse(429, { 'retry-after': '0' }),
+      { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ ok: true }) },
+    )
+    const client = createClient()
+    await expect(client.request('GET', '/x')).resolves.toEqual({ ok: true })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('gives up after exhausting retries and surfaces the status', async () => {
+    const fetchMock = mockFetchSequence(
+      rateLimitedResponse(429, { 'retry-after': '0' }),
+      rateLimitedResponse(429, { 'retry-after': '0' }),
+    )
+    const client = createClient({ maxRetries: 1 })
+    await expect(client.request('GET', '/x')).rejects.toMatchObject({ name: 'GitHubError', status: 429 })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not retry a plain 403 (permission denied)', async () => {
+    const fetchMock = mockFetchSequence(rateLimitedResponse(403, {}))
+    const client = createClient({ maxRetries: 3 })
+    await expect(client.request('GET', '/x')).rejects.toMatchObject({ name: 'GitHubError', status: 403 })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('aborts cleanly while waiting to retry', async () => {
+    const fetchMock = mockFetchSequence(rateLimitedResponse(429, { 'retry-after': '60' }))
+    const client = createClient({ maxRetries: 3 })
+    await expect(
+      client.request('GET', '/x', { signal: AbortSignal.abort() }),
+    ).rejects.toMatchObject({ name: 'GitHubError' })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('createClient.collect', () => {
   afterEach(() => vi.unstubAllGlobals())
 

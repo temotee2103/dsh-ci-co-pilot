@@ -84,6 +84,55 @@ export function triageMarkdown(value) {
   return lines.join('\n')
 }
 
+export function listPullsMarkdown(value) {
+  const { repo, total, open, drafts, items } = value
+  const lines = []
+  lines.push(`## Pull requests · ${repo}`)
+  lines.push(`${total} listed · ${open} open · ${drafts} drafts`)
+  if (items.length === 0) {
+    lines.push('\nNo pull requests match the filter.')
+    return lines.join('\n')
+  }
+  for (const pr of items) {
+    const flags = []
+    if (pr.draft) flags.push('draft')
+    lines.push(
+      `- #${pr.number} ${pr.title} · @${pr.author ?? 'unknown'} · ${pr.daysOpen ?? '?'}d` +
+        ` · [${pr.labels.join(', ') || 'no labels'}]` +
+        ` · \`${pr.base}\` ← \`${pr.head}\`` +
+        (flags.length ? ` · ⚠️ ${flags.join(', ')}` : ''),
+    )
+  }
+  return lines.join('\n')
+}
+
+export function repoStatusMarkdown(value) {
+  const { repo, meta, openPrs, openIssues, runs } = value
+  const lines = []
+  lines.push(`## Repo status · ${repo}`)
+  lines.push(`**${meta.name ?? repo}**${meta.description ? ` — ${meta.description}` : ''}`)
+  lines.push(
+    `⭐ ${meta.stars} · 🍴 ${meta.forks} · 👀 ${meta.watchers}` +
+      (openPrs != null ? ` · ${openPrs} open PRs` : '') +
+      (openIssues != null ? ` · ${openIssues} open issues` : '') +
+      ` · default: \`${meta.defaultBranch ?? '?'}\``,
+  )
+  lines.push(
+    `${meta.language ? `${meta.language} · ` : ''}pushed ${meta.pushedAt ?? 'unknown'} · ${meta.archived ? '🚫 archived' : 'active'}`,
+  )
+  if (runs.length) {
+    lines.push(`\n### Recent workflow runs (${runs.length})`)
+    for (const run of runs) {
+      const icon =
+        run.conclusion === 'success' ? '✅' : run.conclusion === 'failure' ? '❌' : run.conclusion === 'cancelled' ? '🚫' : '⏳'
+      lines.push(`- ${icon} #${run.id} \`${run.name}\` · ${run.branch ?? '?'} · ${run.status}${run.conclusion ? ` / ${run.conclusion}` : ''} · ${run.createdAt ?? ''}`)
+    }
+  } else {
+    lines.push('\n_No recent workflow runs._')
+  }
+  return lines.join('\n')
+}
+
 export function categorize(pr, labels) {
   const set = new Set((labels ?? []).map((label) => label.toLowerCase()))
   if (set.has('breaking') || set.has('major')) return 'breaking'

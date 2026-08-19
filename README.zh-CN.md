@@ -19,6 +19,8 @@
 | `gh_release_notes` | 按标签或 Conventional Commit 前缀，把合并的 PR 分组生成发版说明。 |
 | `gh_rerun_ci` | 重跑 workflow run——仅失败 job 或全部（修复后验证）。 |
 | `gh_create_release` | 把发版说明发布为 GitHub Release（自动创建 tag）。 |
+| `gh_list_pulls` | 按 state / base / head 分支列出 PR，带年龄、标签、draft 信号——找待审查的 PR 或跟踪发布队列。 |
+| `gh_repo_status` | 一次调用获取仓库健康快照：star 数、open PR/Issue 数、最近的 workflow runs。 |
 
 ## 🚀 安装
 
@@ -51,6 +53,8 @@ export GITHUB_TOKEN=github_pat_...   # 或 GH_TOKEN
 - **修复 CI**：`main 分支 CI 红了，找到失败原因并修复，然后推送。`
 - **整理 Issue**：`整理本仓库的 open issues：给未打标签的补标签，关闭过期的重复项。`
 - **发版说明**：`基于上一次 release 生成发版说明并保存到 CHANGELOG.md。`
+- **找 PR 审**：`列出 o/r 里待审查的 open PR（按更新时间排序），挑一个最有风险的给我看。`
+- **仓库体检**：`看一眼 o/r 的健康状况：open PR/Issue 数和最近的 CI 结果。`
 
 ## 🧑‍💻 开发
 
