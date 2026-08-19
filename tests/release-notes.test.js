@@ -19,6 +19,19 @@ describe('categorize', () => {
     expect(categorize({ title: 'chore: bump' }, [])).toBe('chores')
     expect(categorize({ title: 'random title' }, [])).toBe('other')
   })
+  it('handles scope syntax, bang suffix and label case', () => {
+    expect(categorize({ title: 'feat(core): add x' }, [])).toBe('features')
+    expect(categorize({ title: 'fix!: breaking fix' }, [])).toBe('fixes')
+    expect(categorize({ title: 'x' }, ['FEATURE'])).toBe('features')
+    expect(categorize({ title: 'x' }, ['DOCS'])).toBe('docs')
+  })
+  it('maps refactor/perf/test/style to other，build/ci 归 chores', () => {
+    for (const prefix of ['refactor', 'perf', 'test', 'style']) {
+      expect(categorize({ title: `${prefix}: something` }, [])).toBe('other')
+    }
+    expect(categorize({ title: 'build: compile' }, [])).toBe('chores')
+    expect(categorize({ title: 'ci: cache' }, [])).toBe('chores')
+  })
 })
 
 describe('releaseNotesMarkdown', () => {
@@ -33,6 +46,37 @@ describe('releaseNotesMarkdown', () => {
     expect(markdown).toContain('- Add widget (#5)')
     expect(markdown).not.toContain('Bug fixes')
     expect(markdown).not.toContain('Breaking changes')
+  })
+  it('renders breaking / docs / dependencies / chores sections', () => {
+    const markdown = releaseNotesMarkdown({
+      repo: 'o/r',
+      from: 'v1.0.0',
+      to: 'main',
+      sections: {
+        breaking: [{ title: 'Drop Node 20', number: 9 }],
+        features: [],
+        fixes: [],
+        docs: [{ title: 'Update guide', number: 8 }],
+        dependencies: [{ title: 'Bump dsh-tools', number: 7 }],
+        chores: [{ title: 'CI cache', number: 6 }],
+        other: [{ title: 'Misc', number: 5 }],
+      },
+    })
+    expect(markdown).toContain('## ⚠️ Breaking changes')
+    expect(markdown).toContain('- Drop Node 20 (#9)')
+    expect(markdown).toContain('## 📚 Documentation')
+    expect(markdown).toContain('## 🔗 Dependencies')
+    expect(markdown).toContain('## 🧹 Chores')
+    expect(markdown).toContain('## Others')
+  })
+  it('renders the empty-state note when nothing merged', () => {
+    const markdown = releaseNotesMarkdown({
+      repo: 'o/r',
+      from: 'v1.0.0',
+      to: 'main',
+      sections: { breaking: [], features: [], fixes: [], docs: [], dependencies: [], chores: [], other: [] },
+    })
+    expect(markdown).toContain('No merged PRs in this range')
   })
 })
 
