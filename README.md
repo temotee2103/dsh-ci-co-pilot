@@ -78,6 +78,12 @@ Ask your agent things like:
 - **Release notes**
   > Draft release notes since the last release and save them to `CHANGELOG.md`.
 
+- **Find PRs to review**
+  > List the open PRs in `o/r` sorted by update time, and review the riskiest one.
+
+- **Repo health check**
+  > Give me a snapshot of `o/r`: open PR/issue counts and the latest CI results.
+
 ## ⚙️ Configuration
 
 All knobs are validated config values you can override from your profile's `cordis.patch.yml` (see the defaults in [`cordis.patch.yml`](cordis.patch.yml)): `review.maxFiles`, `review.maxDiffChars`, `ci.maxLogLines`, `ci.maxFailedChecks`, `triage.perPage`, `triage.staleDays`, `release.perPage`, `pulls.limit`, `status.runs`. The API client also retries rate-limited responses (403 / 429) automatically, honoring `Retry-After` and `x-ratelimit-reset`.
