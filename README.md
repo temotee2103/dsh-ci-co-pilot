@@ -6,6 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%5E22.19%20%7C%7C%20%3E%3D24-blue)](package.json)
 [![dsh-plugin](https://img.shields.io/badge/topic-dsh--plugin-orange)](https://github.com/topics/dsh-plugin)
+[![Listed in awesome-dsh-plugin](https://img.shields.io/badge/listed%20in-awesome--dsh--plugin-blue)](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin)
 
 `dsh-ci-co-pilot` turns your DeepSeek Harness agent into a GitHub co-pilot that can **review pull requests, debug failing CI, triage issues and draft release notes** — all with structured data from the GitHub REST API, and zero extra runtime dependencies.
 

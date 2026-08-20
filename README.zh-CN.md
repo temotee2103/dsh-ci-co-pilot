@@ -4,6 +4,7 @@
 > 一切皆插件：PR 审查、CI 失败修复、Issue 分类、自动发版说明。
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Listed in awesome-dsh-plugin](https://img.shields.io/badge/listed%20in-awesome--dsh--plugin-blue)](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin)
 
 `dsh-ci-co-pilot` 让你的 DeepSeek Harness Agent 化身 GitHub 副驾：**审查 Pull Request、排查失败的 CI、整理 Issue、起草发版说明**——全部通过 GitHub REST API 获取结构化数据，零额外运行时依赖。
 
