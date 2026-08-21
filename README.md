@@ -108,6 +108,20 @@ pnpm check       # syntax checks + tests
 
 The plugin ships plain ESM JavaScript — no build step, so `dsh plugin add github:...` installs and runs immediately.
 
+## 📚 Listings
+
+Listed in community indexes and curated lists:
+
+| List | Entry |
+| --- | --- |
+| [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) (community pick) | `dsh-ci-co-pilot` |
+| [dsh-index](https://github.com/Sunrisepeak/dsh-index) (official plugin index) | `dsh-ci-co-pilot` |
+| [0xsline/awesome-deepseek-harness](https://github.com/0xsline/awesome-deepseek-harness) | `dsh-ci-co-pilot` |
+| [Dominic789654/awesome-deepseek-harness](https://github.com/Dominic789654/awesome-deepseek-harness) | `dsh-ci-co-pilot` |
+| [imsai-sh/awesome-deepseek-harness-plugins](https://github.com/imsai-sh/awesome-deepseek-harness-plugins) | `dsh-ci-co-pilot` |
+| [Anil-matcha/awesome-dsh-plugin](https://github.com/Anil-matcha/awesome-dsh-plugin) | `dsh-ci-co-pilot` |
+| [losebird/dsh-plugin-market](https://github.com/losebird/dsh-plugin-market) | `dsh-ci-co-pilot` |
+
 ## 📄 License
 
 MIT © [temotee2103](https://github.com/temotee2103)

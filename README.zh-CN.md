@@ -67,6 +67,20 @@ pnpm check
 
 插件是纯 ESM JavaScript，**无构建步骤**，`dsh plugin add github:...` 安装后立即可用。
 
+## 📚 收录情况
+
+已被社区索引与精选列表收录：
+
+| 列表 | 收录内容 |
+| --- | --- |
+| [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin)（社区精选） | `dsh-ci-co-pilot` |
+| [dsh-index](https://github.com/Sunrisepeak/dsh-index)（官方插件索引） | `dsh-ci-co-pilot` |
+| [0xsline/awesome-deepseek-harness](https://github.com/0xsline/awesome-deepseek-harness) | `dsh-ci-co-pilot` |
+| [Dominic789654/awesome-deepseek-harness](https://github.com/Dominic789654/awesome-deepseek-harness) | `dsh-ci-co-pilot` |
+| [imsai-sh/awesome-deepseek-harness-plugins](https://github.com/imsai-sh/awesome-deepseek-harness-plugins) | `dsh-ci-co-pilot` |
+| [Anil-matcha/awesome-dsh-plugin](https://github.com/Anil-matcha/awesome-dsh-plugin) | `dsh-ci-co-pilot` |
+| [losebird/dsh-plugin-market](https://github.com/losebird/dsh-plugin-market) | `dsh-ci-co-pilot` |
+
 ## 📄 License
 
 MIT © [temotee2103](https://github.com/temotee2103)
